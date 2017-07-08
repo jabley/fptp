@@ -30,7 +30,7 @@ type searchResponse struct {
 func (c *compositeSearcher) Search(req *SearchRequest) (io.Closer, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
-	// We use a WaitGroup to keep track of when we've tried all of the Storage instances
+	// We use a WaitGroup to keep track of when we've tried all of the Searcher instances
 	var wg sync.WaitGroup
 
 	// Synchronise on the channel
@@ -45,7 +45,7 @@ func (c *compositeSearcher) Search(req *SearchRequest) (io.Closer, error) {
 		}(req, s)
 	}
 
-	// Housekeeping to track when we've tried all of the Storages
+	// Housekeeping to track when we've tried all of the Searchers
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -61,7 +61,7 @@ func (c *compositeSearcher) search(ctx context.Context, s Searcher, req *SearchR
 
 	select {
 	case <-ctx.Done():
-		// Another Storage already returned a successful response. Ensure we don't leak things
+		// Another Searcher already returned a successful response. Ensure we don't leak things
 		res.Close()
 	case respc <- searchResponse{res, err}:
 	}
