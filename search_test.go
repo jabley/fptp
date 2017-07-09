@@ -127,14 +127,25 @@ func TestClosersAreNotLeaked(t *testing.T) {
 	for i := 0; i < 100000; i++ {
 		winner, _ := composite.Search(fptp.NewSearchRequest())
 		winner.Close()
-		// Give it a little while for all of the laggards to be closed
-		time.Sleep(1 * time.Millisecond)
-		if counter.Unclosed() != 0 {
-			time.Sleep(5 * time.Millisecond)
-			if counter.Unclosed() != 0 {
-				t.Fatalf("Expected all closers to have been closed, but had %d still open", counter.Unclosed())
-			}
+		assertClosersAllClosed(t, counter)
+	}
+}
+
+func assertClosersAllClosed(t *testing.T, counter *CounterCloser) {
+	backoff := 100 * time.Microsecond
+	for {
+		unclosed := counter.Unclosed()
+		if unclosed == 0 {
+			break
 		}
+		// fail if we've exceeded our time budgete - we don't want to spin forever
+		if backoff > 10*time.Millisecond {
+			t.Fatalf("Expected all closers to have been closed, but had %d still open after backing off to %v", unclosed, backoff)
+		}
+
+		// Give it a little while for all of the laggards to be closed
+		time.Sleep(backoff)
+		backoff = backoff * 2
 	}
 }
 
