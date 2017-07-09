@@ -1,6 +1,8 @@
 package fptp_test
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -13,9 +15,7 @@ import (
 
 func TestUnusedCounterHasZeroUnclosed(t *testing.T) {
 	counter := &CounterCloser{}
-	if counter.Unclosed() != 0 {
-		t.Fatalf("Unused counter should have zero unclosed")
-	}
+	assertEqual(t, 0, counter.Unclosed(), "Unused counter should have zero unclosed")
 }
 
 func TestUnclosedSearcherIsCounted(t *testing.T) {
@@ -24,9 +24,7 @@ func TestUnclosedSearcherIsCounted(t *testing.T) {
 
 	closer, _ := searcher.Search(fptp.NewSearchRequest())
 	defer closer.Close()
-	if counter.Unclosed() != 1 {
-		t.Fatalf("Unclosed Closer should have been counted")
-	}
+	assertEqual(t, 1, counter.Unclosed(), "Unclosed Closer should have been counted")
 }
 
 func TestCompositeWillTimeout(t *testing.T) {
@@ -42,16 +40,10 @@ func TestCompositeWillTimeout(t *testing.T) {
 
 	if result != nil {
 		defer result.Close()
-		t.Fatalf("Expected nil result, but got %v", result)
+		assertEqual(t, nil, result, "Expected result to be nil")
 	}
 
-	if err == nil {
-		t.Fatalf("Expected to get a timeout error but got nil")
-	}
-
-	if err != context.DeadlineExceeded {
-		t.Fatalf("Got error %v", err)
-	}
+	assertEqual(t, context.DeadlineExceeded, err, "Expected to get a timeout error")
 }
 
 func TestWillWaitUntilSuccessIsReturned(t *testing.T) {
@@ -72,15 +64,10 @@ func TestWillWaitUntilSuccessIsReturned(t *testing.T) {
 
 	result, err := composite.Search(fptp.NewSearchRequest())
 
-	if err != nil {
-		t.Fatalf("Expected that err should be nil, but got %v", err)
+	if result != nil {
+		defer result.Close()
 	}
-
-	if result == nil {
-		t.Fatalf("Expected non-nil result")
-	}
-
-	result.Close()
+	assertEqual(t, nil, err, "Expected err to be nil")
 }
 
 func TestWillTryAllSearchersAndReturnTheFailure(t *testing.T) {
@@ -95,7 +82,7 @@ func TestWillTryAllSearchersAndReturnTheFailure(t *testing.T) {
 
 	if result != nil {
 		defer result.Close()
-		t.Fatalf("Expected nil result, but got %v", result)
+		assertEqual(t, nil, result, "Expected result to be nil")
 	}
 
 	if err == nil {
@@ -110,9 +97,7 @@ func TestWillTryAllSearchersAndReturnTheFailure(t *testing.T) {
 		}
 	}
 
-	if unusedSearchers != 0 {
-		t.Fatalf("Expected that all of the searchers had been used, but %d were not", unusedSearchers)
-	}
+	assertEqual(t, 0, unusedSearchers, "Expected that all of the searchers had been used, but %d were not", unusedSearchers)
 }
 
 func TestClosersAreNotLeaked(t *testing.T) {
@@ -124,15 +109,45 @@ func TestClosersAreNotLeaked(t *testing.T) {
 
 	composite := fptp.NewCompositeSearcher(searchers, 5*time.Second)
 
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < 1000000; i++ {
 		winner, _ := composite.Search(fptp.NewSearchRequest())
 		winner.Close()
 		assertClosersAllClosed(t, counter)
 	}
 }
 
+func assertEqual(t *testing.T, expected interface{}, actual interface{}, msgAndArgs ...interface{}) {
+	if expected == nil || actual == nil {
+		if actual == expected {
+			return
+		}
+		fail(t, expected, actual, msgAndArgs...)
+	}
+
+	if !reflect.DeepEqual(expected, actual) {
+		fail(t, expected, actual, msgAndArgs...)
+	}
+}
+
+func fail(t *testing.T, expected, actual interface{}, msgAndArgs ...interface{}) {
+	t.Fatalf("\nExpected:\t%#v\nActual:\t\t%#v\n%s", expected, actual, messageFromMsgAndArgs(msgAndArgs...))
+}
+
+func messageFromMsgAndArgs(msgAndArgs ...interface{}) string {
+	if len(msgAndArgs) == 0 || msgAndArgs == nil {
+		return ""
+	}
+	if len(msgAndArgs) == 1 {
+		return msgAndArgs[0].(string)
+	}
+	if len(msgAndArgs) > 1 {
+		return fmt.Sprintf(msgAndArgs[0].(string), msgAndArgs[1:]...)
+	}
+	return ""
+}
+
 func assertClosersAllClosed(t *testing.T, counter *CounterCloser) {
-	backoff := 1 * time.Microsecond
+	backoff := 1 * time.Nanosecond
 	for {
 		unclosed := counter.Unclosed()
 		if unclosed == 0 {
@@ -140,7 +155,7 @@ func assertClosersAllClosed(t *testing.T, counter *CounterCloser) {
 		}
 		// fail if we've exceeded our time budgete - we don't want to spin forever
 		if backoff > 10*time.Millisecond {
-			t.Fatalf("Expected all closers to have been closed, but had %d still open after backing off to %v", unclosed, backoff)
+			assertEqual(t, 0, unclosed, "Expected all closers to have been closed, but had %d still open after backing off to %v", unclosed, backoff)
 		}
 
 		// Give it a little while for all of the laggards to be closed
