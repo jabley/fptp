@@ -122,7 +122,7 @@ func TestClosersAreNotLeaked(t *testing.T) {
 
 	composite := fptp.NewCompositeSearcher(searchers, 5*time.Second)
 
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 10000; i++ {
 		winner, _ := composite.Search(fptp.NewSearchRequest())
 		winner.Close()
 		assertClosersAllClosed(t, counter)
