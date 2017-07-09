@@ -27,6 +27,19 @@ func TestUnclosedSearcherIsCounted(t *testing.T) {
 	assertEqual(t, 1, counter.Unclosed(), "Unclosed Closer should have been counted")
 }
 
+func TestCloserCanOnlyBeClosedOnce(t *testing.T) {
+	counter := &CounterCloser{}
+
+	assertEqual(t, 0, counter.Unclosed(), "Unused counter should have zero unclosed")
+	closer := counter.NewCloser()
+	assertEqual(t, 1, counter.Unclosed(), "Counter should have a single closer outstanding")
+	closer.Close()
+	assertEqual(t, 0, counter.Unclosed(), "Closer has now been closed")
+	closer.Close()
+	closer.Close()
+	assertEqual(t, 0, counter.Unclosed(), "Repeatedly closing has no effect")
+}
+
 func TestCompositeWillTimeout(t *testing.T) {
 	counter := &CounterCloser{}
 	searcher := &delayedSearcher{

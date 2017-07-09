@@ -40,11 +40,18 @@ func (c *CounterCloser) Unclosed() int {
 }
 
 type countingCloser struct {
+	mu            sync.Mutex
+	closed        bool
 	closeObserver closeObserver
 }
 
 func (cc *countingCloser) Close() error {
-	cc.closeObserver.Closed()
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	if !cc.closed {
+		cc.closed = true
+		cc.closeObserver.Closed()
+	}
 	return nil
 }
 
