@@ -132,7 +132,7 @@ func TestClosersAreNotLeaked(t *testing.T) {
 }
 
 func assertClosersAllClosed(t *testing.T, counter *CounterCloser) {
-	backoff := 100 * time.Microsecond
+	backoff := 1 * time.Microsecond
 	for {
 		unclosed := counter.Unclosed()
 		if unclosed == 0 {
