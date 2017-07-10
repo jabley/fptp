@@ -40,6 +40,17 @@ func TestCloserCanOnlyBeClosedOnce(t *testing.T) {
 	assertEqual(t, 0, counter.Unclosed(), "Repeatedly closing has no effect")
 }
 
+func TestCompositeWithNoSearchersFails(t *testing.T) {
+	composite := fptp.NewCompositeSearcher([]fptp.Searcher{}, 10*time.Millisecond)
+	result, err := composite.Search(fptp.NewSearchRequest())
+	if result != nil {
+		defer result.Close()
+		assertEqual(t, nil, result, "Expected result to be nil")
+	}
+
+	assertEqual(t, fptp.ErrAllSearchersFailed, err, "Expected to get all searchers failed")
+}
+
 func TestCompositeWillTimeout(t *testing.T) {
 	counter := &CounterCloser{}
 	searcher := &delayedSearcher{

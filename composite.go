@@ -2,10 +2,13 @@ package fptp
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 	"time"
 )
+
+var ErrAllSearchersFailed = errors.New("fptp: all searchers failed")
 
 type compositeSearcher struct {
 	searchers []Searcher
@@ -81,7 +84,10 @@ func (c *compositeSearcher) waitForSearchCompletion(ctx context.Context, cancel 
 			lastErr = r.err // failed, keep track of why
 		case <-done:
 			// we've tried every Searcher, and none of them returned a successful response
-			return nil, lastErr
+			if lastErr != nil {
+				return nil, lastErr
+			}
+			return nil, ErrAllSearchersFailed
 		}
 	}
 }
