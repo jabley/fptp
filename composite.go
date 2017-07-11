@@ -66,7 +66,8 @@ func (c *compositeSearcher) search(ctx context.Context, s Searcher, req *SearchR
 	case <-ctx.Done():
 		// Another Searcher already returned a successful response. Ensure we don't leak things
 		res.Close()
-	case respc <- searchResponse{res, err}:
+	default:
+		respc <- searchResponse{res, err}
 	}
 }
 
