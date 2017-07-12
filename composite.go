@@ -55,7 +55,7 @@ func (c *compositeSearcher) Search(req *SearchRequest) (io.Closer, error) {
 		wg.Wait()
 	}()
 
-	return c.waitForSearchCompletion(ctx, cancel, respc, done)
+	return c.waitForSearchCompletion(ctx, respc, done)
 }
 
 func (c *compositeSearcher) search(ctx context.Context, s Searcher, req *SearchRequest, respc chan<- searchResponse) {
@@ -70,7 +70,7 @@ func (c *compositeSearcher) search(ctx context.Context, s Searcher, req *SearchR
 	}
 }
 
-func (c *compositeSearcher) waitForSearchCompletion(ctx context.Context, cancel context.CancelFunc, respc chan searchResponse, done chan struct{}) (io.Closer, error) {
+func (c *compositeSearcher) waitForSearchCompletion(ctx context.Context, respc chan searchResponse, done chan struct{}) (io.Closer, error) {
 	var lastErr error
 
 	for {
