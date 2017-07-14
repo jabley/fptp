@@ -48,7 +48,7 @@ func TestCompositeWithNoSearchersFails(t *testing.T) {
 		assertEqual(t, nil, result, "Expected result to be nil")
 	}
 
-	assertEqual(t, fptp.ErrAllSearchersFailed, err, "Expected to get all searchers failed")
+	assertEqual(t, fptp.ErrNoSearchersProvided, err, "Expected to get all searchers failed")
 }
 
 func TestCompositeWillTimeout(t *testing.T) {

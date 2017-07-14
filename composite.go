@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-var ErrAllSearchersFailed = errors.New("fptp: all searchers failed")
+// ErrNoSearchersProvided indicates that no searchers were passed in the compositeSearcher
+var ErrNoSearchersProvided = errors.New("fptp: no searchers provided")
 
 type compositeSearcher struct {
 	searchers []Searcher
@@ -87,7 +88,7 @@ func (c *compositeSearcher) waitForSearchCompletion(ctx context.Context, respc c
 			if lastErr != nil {
 				return nil, lastErr
 			}
-			return nil, ErrAllSearchersFailed
+			return nil, ErrNoSearchersProvided
 		}
 	}
 }
