@@ -12,7 +12,7 @@ SRC_DIRS := . # directories which hold app source (not vendored)
 
 ALL_ARCH := amd64 arm arm64 ppc64le
 
-BUILD_IMAGE ?= golang:1.8-alpine
+BUILD_IMAGE ?= golang:1.9-alpine
 
 all: test
 
